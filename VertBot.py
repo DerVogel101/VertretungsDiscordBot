@@ -46,8 +46,36 @@ if __name__ == "__main__":
         pass
 
     # Default structure for data.json
+    # Structure:
+    # {"servers": {
+    #     server_id: {  # e.g. 123456789 type: int
+    #         "subjects": {
+    #             {subject_name: {  # e.g. "Mathe" type: str
+    #                 "teacher": str,  # teacher name
+    #                 "abscences": {
+    #                     {date: {  # e.g. "2021-09-01" type: str
+    #                         "reason": str,  # reason for abscence (e.g. "Krank")
+    #                         "is_late": bool,  # if the teacher is late
+    #                         "length": int,  # in minutes if is_late is True else in hours
+    #                         "is_replaced": bool,  # if a replacement teacher is set
+    #                         "replacement_present": bool,  # if the replacement teacher is present  or on "mit betreuung"
+    #                         "period": list[int, int],  # [start, end] in format [start period, end period]
+    #                         "note": str,  # optional note
+    #                         "reporter_id": int  # discord id of the reporter
+    #                     }}
+    #                 }
+    #             }}
+    #         },
+    #         "channel": int,  # channel id of the channel where the bot should send and recive the messages
+    #         "reporter_role": int  # role id of the reporter role
+    #     }
+    # }}
+
+
+
+
     default_database_structure = [
-        ("servers", {})
+        ("servers", {}),
     ]
 
     # Function to load a json file or write an empty {} to it if its empty using a json.dump
@@ -59,8 +87,7 @@ if __name__ == "__main__":
         save_json_dict("data.json", database)
 
 
-    # Function to register a server in the database
-    def register_servers_database() -> None:
+    def register_servers_database() -> None:  # Function to register a server in the database
         """Registers all servers in the database"""
         for guild in client.guilds:
             if str(guild.id) not in database:
