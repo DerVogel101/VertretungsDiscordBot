@@ -48,29 +48,28 @@ if __name__ == "__main__":
 
     # Default structure for data.json
     # Structure:
-    """NOTUSED = {"servers": {
+    NOTUSED = {"servers": {
         server_id: {  # e.g. 123456789 type: int
-            "subjects": {
-                {subject_name: {  # e.g. "Mathe" type: str
-                    "teacher": str,  # teacher name
-                    "abscences": {
-                        {date: {  # e.g. "2021-09-01" type: str
-                            "reason": str,  # reason for abscence (e.g. "Krank")
-                            "is_late": bool,  # if the teacher is late
-                            "length": int,  # in minutes if is_late is True
-                            "is_replaced": bool,  # if a replacement teacher is set
-                            "replacement_present": bool,  # if the replacement teacher is present  or on "mit betreuung"
-                            "period": list[int, int],  # [start, end] in format [start period, end period]
-                            "note": str,  # optional note
-                            "reporter_id": int  # discord id of the reporter
-                        }}
-                    }
+            "absences": {
+                {date: {  # e.g. "2021-09-01" type: str
+                    {subject_name: {  # e.g. "Mathe" type: str
+                        "teacher": str,  # teacher name
+                        "reason": str,  # reason for abscence (e.g. "Krank")
+                        "is_late": bool,  # if the teacher is late
+                        "length": int,  # in minutes if is_late is True
+                        "is_replaced": bool,  # if a replacement teacher is set
+                        "replacement_present": bool,  # if the replacement teacher is present  or on "mit betreuung"
+                        "period": list[int, int],  # [start, end] in format [start period, end period]
+                        "note": str,  # optional note
+                        "reporter_id": int  # discord id of the reporter
+                    }}
+
                 }}
             },
             "channel": int,  # channel id of the channel where the bot should send and recive the messages
             "reporter_role": int  # role id of the reporter role
         }
-    }}"""
+    }}
 
 
     class DiscordDatabaseApi:
@@ -116,7 +115,7 @@ if __name__ == "__main__":
             """Registers all servers in the database"""
             for guild in register_client.guilds:
                 if str(guild.id) not in self.__database["servers"]:
-                    self.__database["servers"][str(guild.id)] = {"subjects": {}, "channel": None, "reporter_role": None}
+                    self.__database["servers"][str(guild.id)] = {"absences": {}, "channel": None, "reporter_role": None}
                     self.__save()
                     print(f"Registered {guild.name} in database")
 
