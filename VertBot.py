@@ -49,10 +49,13 @@ if __name__ == "__main__":
     # Default structure for data.json
     # Structure:
     NOTUSED = {"servers": {
-        server_id: {  # e.g. 123456789 type: int
+        server_id: {  # e.g. 123456789 type: str
+            "subjects": list[str],  # list of all subjects
+            "channel": int,  # channel id of the channel where the bot should send and recive the messages
+            "reporter_role": int,  # role id of the reporter role
             "absences": {
-                {date: {  # e.g. "2021-09-01" type: str
-                    {subject_name: {  # e.g. "Mathe" type: str
+                date: {  # e.g. "2021-09-01" type: str
+                    subject_name: [{  # e.g. "Mathe" type: str
                         "teacher": str,  # teacher name
                         "reason": str,  # reason for abscence (e.g. "Krank")
                         "is_late": bool,  # if the teacher is late
@@ -62,14 +65,11 @@ if __name__ == "__main__":
                         "period": list[int, int],  # [start, end] in format [start period, end period]
                         "note": str,  # optional note
                         "reporter_id": int  # discord id of the reporter
-                    }}
-
-                }}
-            },
-            "channel": int,  # channel id of the channel where the bot should send and recive the messages
-            "reporter_role": int  # role id of the reporter role
+                    }]}
+                }
+            }
         }
-    }}
+    }
 
 
     class DiscordDatabaseApi:
@@ -115,9 +115,41 @@ if __name__ == "__main__":
             """Registers all servers in the database"""
             for guild in register_client.guilds:
                 if str(guild.id) not in self.__database["servers"]:
-                    self.__database["servers"][str(guild.id)] = {"absences": {}, "channel": None, "reporter_role": None}
+                    self.__database["servers"][str(guild.id)] = {"absences": {}, "channel": None, "reporter_role": None,
+                                                                 "subjects": []}
                     self.__save()
                     print(f"Registered {guild.name} in database")
+
+        def set_subjects(self, server_id: str, subjects: list[str], mode: str) -> None:
+            """Sets the subjects for a server
+            :param server_id: id of the server
+            :param subjects: list of subjects
+            :param mode: "a" or "s" for add or set
+            """
+            match mode:
+                case "a":
+                    self.__database["servers"][server_id]["subjects"].extend(subjects)
+                case "s":
+                    self.__database["servers"][server_id]["subjects"] = subjects
+                case _:
+                    raise ValueError("mode must be 'a' or 's'")
+            self.__save()
+
+        def get_subjects(self, server_id: str) -> list[str]:
+            """Returns all subjects"""
+            return self.__database["servers"][server_id]["subjects"]
+
+        def set_channel(self, server_id: str, channel_id: int) -> None:
+            """Sets the channel where the bot should send and recive messages"""
+            self.__database["servers"][server_id]["channel"] = channel_id
+            self.__save()
+
+        def set_reporter_role(self, server_id: str, role_id: int) -> None:
+            """Sets the role which can report absences"""
+            self.__database["servers"][server_id]["reporter_role"] = role_id
+            self.__save()
+
+
 
         # TODO: set_channel, set_subjects, set_channel, set_reporter_role, get_subjects, get_channel, get_reporter_role
         ...
