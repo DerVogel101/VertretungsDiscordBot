@@ -54,7 +54,7 @@ if __name__ == "__main__":
             "channel": int,  # channel id of the channel where the bot should send and recive the messages
             "reporter_role": int,  # role id of the reporter role
             "absences": {
-                date: {  # e.g. "2021-09-01" type: str
+                date: {  # %d.%m.%Y type: str
                     subject_name: [{  # e.g. "Mathe" type: str
                         "teacher": str,  # teacher name
                         "reason": str,  # reason for abscence (e.g. "Krank")
@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
         def __init__(self, file_name: str) -> None:
             self.__file_name = file_name
-            self.__load()  # Load database from file into self.__database
+            self._load()  # Load database from file into self._database
 
         def __genrate_empty(self) -> None:
             try:
@@ -87,11 +87,11 @@ if __name__ == "__main__":
             except FileExistsError:
                 pass
 
-        def __load(self) -> None:
+        def _load(self) -> None:
             for _ in range(2):
                 try:
                     with open(self.__file_name, "r") as file:
-                        self.__database = json.load(file)
+                        self._database = json.load(file)
                     break
                 except FileNotFoundError:
                     self.__genrate_empty()
@@ -100,24 +100,24 @@ if __name__ == "__main__":
             else:
                 raise self.InvalidFileError("The file could not be generated")
 
-        def __save(self) -> None:
+        def _save(self) -> None:
             with open(self.__file_name, "w") as file:
-                json.dump(self.__database, file)
+                json.dump(self._database, file)
 
         def print(self) -> None:  # FIXME: Only for testing
-            pprint(self.__database)
+            pprint(self._database)
 
         def get_database(self) -> dict:  # FIXME: Only for testing
-            self.__load()
-            return deepcopy(self.__database)
+            self._load()
+            return deepcopy(self._database)
 
         def register_servers(self, register_client: discord.client.Client) -> None:
             """Registers all servers in the database"""
             for guild in register_client.guilds:
-                if str(guild.id) not in self.__database["servers"]:
-                    self.__database["servers"][str(guild.id)] = {"absences": {}, "channel": None, "reporter_role": None,
+                if str(guild.id) not in self._database["servers"]:
+                    self._database["servers"][str(guild.id)] = {"absences": {}, "channel": None, "reporter_role": None,
                                                                  "subjects": []}
-                    self.__save()
+                    self._save()
                     print(f"Registered {guild.name} in database")
 
         def set_subjects(self, server_id: str, subjects: list[str], mode: str) -> None:
@@ -128,31 +128,75 @@ if __name__ == "__main__":
             """
             match mode:
                 case "a":
-                    self.__database["servers"][server_id]["subjects"].extend(subjects)
+                    self._database["servers"][server_id]["subjects"].extend(subjects)
                 case "s":
-                    self.__database["servers"][server_id]["subjects"] = subjects
+                    self._database["servers"][server_id]["subjects"] = subjects
                 case _:
                     raise ValueError("mode must be 'a' or 's'")
-            self.__save()
+            self._save()
 
         def get_subjects(self, server_id: str) -> list[str]:
             """Returns all subjects"""
-            return self.__database["servers"][server_id]["subjects"]
+            return deepcopy(self._database["servers"][server_id]["subjects"])
 
         def set_channel(self, server_id: str, channel_id: int) -> None:
             """Sets the channel where the bot should send and recive messages"""
-            self.__database["servers"][server_id]["channel"] = channel_id
-            self.__save()
+            self._database["servers"][server_id]["channel"] = channel_id
+            self._save()
+
+        def get_channel(self, server_id: str) -> int:
+            """Returns the channel id"""
+            return self._database["servers"][server_id]["channel"]
 
         def set_reporter_role(self, server_id: str, role_id: int) -> None:
             """Sets the role which can report absences"""
-            self.__database["servers"][server_id]["reporter_role"] = role_id
-            self.__save()
+            self._database["servers"][server_id]["reporter_role"] = role_id
+            self._save()
 
+        def get_reporter_role(self, server_id: str) -> int:
+            """Returns the role id"""
+            return self._database["servers"][server_id]["reporter_role"]
 
+        class Absence:
+            @staticmethod
+            def validate_date(date_string, date_format):
+                try:
+                    datetime.strptime(date_string, date_format)
+                    return True
+                except ValueError:
+                    return False
 
-        # TODO: set_channel, set_subjects, set_channel, set_reporter_role, get_subjects, get_channel, get_reporter_role
-        ...
+            def __init__(self, database: "DiscordDatabaseApi", server_id: str, date: str, subject_name: str) -> None:
+                """Absence class
+                Should not be used in some sort of multi-threading environment, because it does not save to the database
+                if the method for the save is not called, could end up in database corruption
+                :param database: DiscordDatabaseApi
+                :param server_id: id of the server
+                :param date: date in format %d.%m.%Y
+                :param subject_name: name of the subject
+                """
+                self.__inhert_data = database  # inherit database from DiscordDatabaseApi
+
+                if server_id not in self.__inhert_data._database["servers"]:
+                    raise ValueError(f"Server {server_id} not in database")
+                if subject_name not in self.__inhert_data.get_subjects(server_id):
+                    raise ValueError(f"Subject {subject_name} not in subjects")
+                if not self.validate_date(date, "%d.%m.%Y"):
+                    raise ValueError(f"Date {date} not in format %d.%m.%Y")
+
+                self.__server_id = server_id
+                self.__date = date
+                self.__subject_name = subject_name
+                self.__absence_data = []
+
+                if date not in self.__inhert_data._database["servers"][self.__server_id]["absences"]:
+                    self.__inhert_data._database["servers"][self.__server_id]["absences"][self.__date] = {}
+                    self.__inhert_data._save()  # FIXME: Is this necessary? or is it enough to save at the end of the edit?
+
+                # TODO: Add check if subject_name is in subjects if not add it
+
+            # TODO: Add __absence_data editing methods, __absence_data getter and save method
+
 
     test = DiscordDatabaseApi("data.json")
 
