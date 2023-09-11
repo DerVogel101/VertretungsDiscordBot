@@ -175,11 +175,12 @@ if __name__ == "__main__":
                 :param date: date in format %d.%m.%Y
                 :param subject_name: name of the subject
                 """
-                self.__inhert_data = database  # inherit database from DiscordDatabaseApi
+                self.__data = database._database  # database dict from DiscordDatabaseApi
+                self.__database = database  # database class from DiscordDatabaseApi
 
-                if server_id not in self.__inhert_data._database["servers"]:
+                if server_id not in self.__data["servers"]:
                     raise ValueError(f"Server {server_id} not in database")
-                if subject_name not in self.__inhert_data.get_subjects(server_id):
+                if subject_name not in self.__database.get_subjects(server_id):
                     raise ValueError(f"Subject {subject_name} not in subjects")
                 if not self.validate_date(date, "%d.%m.%Y"):
                     raise ValueError(f"Date {date} not in format %d.%m.%Y")
@@ -187,13 +188,13 @@ if __name__ == "__main__":
                 self.__server_id = server_id
                 self.__date = date
                 self.__subject_name = subject_name
-                self.__absence_data = []
+                self.__absence_data = {}
 
-                if date not in self.__inhert_data._database["servers"][self.__server_id]["absences"]:
-                    self.__inhert_data._database["servers"][self.__server_id]["absences"][self.__date] = {}
-                    self.__inhert_data._save()  # FIXME: Is this necessary? or is it enough to save at the end of the edit?
+                if date not in self.__data["servers"][self.__server_id]["absences"]:
+                    self.__data["servers"][self.__server_id]["absences"][self.__date] = {}
+                if self.__subject_name not in self.__data["servers"][self.__server_id]["absences"][self.__date]:
+                    self.__data["servers"][self.__server_id]["absences"][self.__date][self.__subject_name] = []
 
-                # TODO: Add check if subject_name is in subjects if not add it
 
             # TODO: Add __absence_data editing methods, __absence_data getter and save method
 
