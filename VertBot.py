@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # Structure:
     NOTUSED = {"servers": {
         server_id: {  # e.g. 123456789 type: str
-            "subjects": list[str],  # list of all subjects
+            "subjects": dict[str:str],  # dict of subjects with the subject name as key and the teacher name as value
             "channel": int,  # channel id of the channel where the bot should send and recive the messages
             "reporter_role": int,  # role id of the reporter role
             "absences": {
@@ -116,26 +116,26 @@ if __name__ == "__main__":
             for guild in register_client.guilds:
                 if str(guild.id) not in self._database["servers"]:
                     self._database["servers"][str(guild.id)] = {"absences": {}, "channel": None, "reporter_role": None,
-                                                                 "subjects": []}
+                                                                 "subjects": {}}
                     self._save()
                     print(f"Registered {guild.name} in database")
 
-        def set_subjects(self, server_id: str, subjects: list[str], mode: str) -> None:
+        def set_subjects(self, server_id: str, subjects: dict[str:str], mode: str) -> None:
             """Sets the subjects for a server
             :param server_id: id of the server
-            :param subjects: list of subjects
+            :param subjects: dict of subjects with the subject name as key and the teacher name as value
             :param mode: "a" or "s" for add or set
             """
             match mode:
                 case "a":
-                    self._database["servers"][server_id]["subjects"].extend(subjects)
+                    self._database["servers"][server_id]["subjects"].update(subjects)
                 case "s":
-                    self._database["servers"][server_id]["subjects"] = subjects
+                    self._database["servers"][server_id]["subjects"]: dict[str:str] = subjects
                 case _:
                     raise ValueError("mode must be 'a' or 's'")
             self._save()
 
-        def get_subjects(self, server_id: str) -> list[str]:
+        def get_subjects(self, server_id: str) -> dict[str:str]:
             """Returns all subjects"""
             return deepcopy(self._database["servers"][server_id]["subjects"])
 
@@ -195,8 +195,101 @@ if __name__ == "__main__":
                 if self.__subject_name not in self.__data["servers"][self.__server_id]["absences"][self.__date]:
                     self.__data["servers"][self.__server_id]["absences"][self.__date][self.__subject_name] = []
 
+            def set_teacher(self, teacher: str = None) -> None:
+                """Sets the teacher name"""
+                if teacher is None:
+                    teacher = self.__database.get_subjects(self.__server_id)[self.__subject_name]
+                elif teacher not in self.__database.get_subjects(self.__server_id).values():
+                    teacher = "Unbekannt"
+                self.__absence_data["teacher"] = teacher
 
-            # TODO: Add __absence_data editing methods, __absence_data getter and save method
+            def get_teacher(self) -> str:
+                """Returns the teacher name"""
+                return self.__absence_data["teacher"]
+
+            def set_reason(self, reason: str = None) -> None:
+                """Sets the reason for absence"""
+                if reason is None:
+                    reason = "Unbekannt"
+                self.__absence_data["reason"] = reason
+
+            def get_reason(self) -> str:
+                """Returns the reason for absence"""
+                return self.__absence_data["reason"]
+
+            def set_is_late(self, is_late: bool = False) -> None:
+                """Sets if the teacher is late"""
+                self.__absence_data["is_late"] = is_late
+
+            def get_is_late(self) -> bool:
+                """Returns if the teacher is late"""
+                return self.__absence_data["is_late"]
+
+            def set_length(self, length: int = None) -> None:
+                """Sets the length of the absence"""
+                if length is None:
+                    length = 0
+                self.__absence_data["length"] = length
+
+            def get_length(self) -> int:
+                """Returns the length of the absence"""
+                return self.__absence_data["length"]
+
+            def set_is_replaced(self, is_replaced: bool = False) -> None:
+                """Sets if the teacher is replaced"""
+                self.__absence_data["is_replaced"] = is_replaced
+
+            def get_is_replaced(self) -> bool:
+                """Returns if the teacher is replaced"""
+                return self.__absence_data["is_replaced"]
+
+            def set_replacement_present(self, replacement_present: bool = False) -> None:
+                """Sets if the replacement teacher is present"""
+                self.__absence_data["replacement_present"] = replacement_present
+
+            def get_replacement_present(self) -> bool:
+                """Returns if the replacement teacher is present"""
+                return self.__absence_data["replacement_present"]
+
+            def set_period(self, period: list[int, int] = None) -> None:
+                """Sets the period of the absence"""
+                if period is None:
+                    period = [0, 0]
+                self.__absence_data["period"] = period
+
+            def get_period(self) -> list[int, int]:
+                """Returns the period of the absence"""
+                return self.__absence_data["period"].copy()
+
+            def set_note(self, note: str = None) -> None:
+                """Sets the note of the absence"""
+                if note is None:
+                    note = ""
+                self.__absence_data["note"] = note
+
+            def get_note(self) -> str:
+                """Returns the note of the absence"""
+                return self.__absence_data["note"]
+
+            def set_reporter_id(self, reporter_id: int = None) -> None:
+                """Sets the reporter id"""
+                if reporter_id is None:
+                    reporter_id = 0
+                self.__absence_data["reporter_id"] = reporter_id
+
+            def get_reporter_id(self) -> int:
+                """Returns the reporter id"""
+                return self.__absence_data["reporter_id"]
+
+            def get_absence_data(self) -> dict:
+                """Returns the absence data"""
+                return deepcopy(self.__absence_data)
+
+            def write_save(self) -> None:
+                """Writes the data to the database"""
+                self.__data["servers"][self.__server_id]["absences"][self.__date][self.__subject_name].append(
+                    self.__absence_data)
+                self.__database._save()
 
 
     test = DiscordDatabaseApi("data.json")
